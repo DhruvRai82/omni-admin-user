@@ -3,9 +3,11 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function Settings() {
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <div className="space-y-6">
@@ -23,9 +25,15 @@ export default function Settings() {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="dark-mode">Dark Mode</Label>
-              <p className="text-sm text-muted-foreground">Currently enabled by default</p>
+              <p className="text-sm text-muted-foreground">
+                {theme === 'dark' ? 'Currently in dark mode' : 'Currently in light mode'}
+              </p>
             </div>
-            <Switch id="dark-mode" checked disabled />
+            <Switch 
+              id="dark-mode" 
+              checked={theme === 'dark'} 
+              onCheckedChange={toggleTheme}
+            />
           </div>
         </CardContent>
       </Card>
