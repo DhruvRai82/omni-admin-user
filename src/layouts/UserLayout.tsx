@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { UserSidebar } from '@/components/UserSidebar';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { AIAssistant } from '@/components/AIAssistant';
 
 export default function UserLayout() {
   return (
@@ -17,6 +18,7 @@ export default function UserLayout() {
             <Outlet />
           </div>
         </main>
+        <AIAssistant />
       </div>
     </SidebarProvider>
   );

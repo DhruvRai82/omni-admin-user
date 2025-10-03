@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { AIAssistant } from '@/components/AIAssistant';
 
 export default function AdminLayout() {
   return (
@@ -17,6 +18,7 @@ export default function AdminLayout() {
             <Outlet />
           </div>
         </main>
+        <AIAssistant />
       </div>
     </SidebarProvider>
   );

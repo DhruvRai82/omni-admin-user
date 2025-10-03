@@ -20,7 +20,7 @@ import UserDashboard from "./pages/user/UserDashboard";
 import Projects from "./pages/user/Projects";
 import ProjectDetail from "./pages/user/ProjectDetail";
 import UserChat from "./pages/user/UserChat";
-import UserApps from "./pages/admin/Apps";
+import UserApps from "./pages/user/UserApps";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 
