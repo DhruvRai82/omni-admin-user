@@ -14,12 +14,11 @@ import AdminLayout from "./layouts/AdminLayout";
 import UserLayout from "./layouts/UserLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Users from "./pages/admin/Users";
-import AdminChat from "./pages/admin/Chat";
+import Chat from "./pages/Chat";
 import AdminApps from "./pages/admin/Apps";
 import UserDashboard from "./pages/user/UserDashboard";
 import Projects from "./pages/user/Projects";
 import ProjectDetail from "./pages/user/ProjectDetail";
-import UserChat from "./pages/user/UserChat";
 import UserApps from "./pages/user/UserApps";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
@@ -50,7 +49,7 @@ const App = () => (
             >
               <Route index element={<AdminDashboard />} />
               <Route path="users" element={<Users />} />
-              <Route path="chat" element={<AdminChat />} />
+              <Route path="chat" element={<Chat />} />
               <Route path="apps" element={<AdminApps />} />
               <Route path="profile" element={<Profile />} />
               <Route path="settings" element={<Settings />} />
@@ -68,7 +67,7 @@ const App = () => (
               <Route index element={<UserDashboard />} />
               <Route path="projects" element={<Projects />} />
               <Route path="projects/:id" element={<ProjectDetail />} />
-              <Route path="chat" element={<UserChat />} />
+              <Route path="chat" element={<Chat />} />
               <Route path="apps" element={<UserApps />} />
               <Route path="profile" element={<Profile />} />
               <Route path="settings" element={<Settings />} />
