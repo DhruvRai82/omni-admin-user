@@ -35,14 +35,11 @@ const Chat = () => {
   const isAdmin = userRole === 'admin';
 
   useEffect(() => {
-    if (isAdmin) {
+    // Both admin and regular users fetch all user chats
+    if (user) {
       fetchUserChats();
-    } else {
-      // For regular users, automatically set up chat with admin
-      fetchMessages(null);
-      subscribeToMessages(null);
     }
-  }, [isAdmin, user]);
+  }, [user]);
 
   useEffect(() => {
     if (selectedUser) {
@@ -94,19 +91,15 @@ const Chat = () => {
   };
 
   const fetchMessages = async (otherUserId: string | null) => {
+    if (!otherUserId || !user) return;
+    
     try {
-      let query = supabase
+      // Fetch all messages between current user and selected user
+      const { data, error } = await supabase
         .from('chat_messages')
         .select('*')
+        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${user.id})`)
         .order('created_at', { ascending: true });
-
-      if (isAdmin && otherUserId) {
-        query = query.or(`sender_id.eq.${otherUserId},receiver_id.eq.${otherUserId}`);
-      } else if (!isAdmin) {
-        query = query.or(`sender_id.eq.${user?.id},receiver_id.eq.${user?.id}`);
-      }
-
-      const { data, error } = await query;
 
       if (error) throw error;
       setMessages(data || []);
@@ -128,14 +121,14 @@ const Chat = () => {
         },
         (payload) => {
           const newMsg = payload.new as Message;
-          if (isAdmin) {
-            if (otherUserId && (newMsg.sender_id === otherUserId || newMsg.receiver_id === otherUserId)) {
-              setMessages(prev => [...prev, newMsg]);
-            }
-          } else {
+          // Update messages if the new message involves current user and selected user
+          if (otherUserId && user && 
+              ((newMsg.sender_id === user.id && newMsg.receiver_id === otherUserId) ||
+               (newMsg.sender_id === otherUserId && newMsg.receiver_id === user.id))) {
             setMessages(prev => [...prev, newMsg]);
           }
-          if (isAdmin) fetchUserChats();
+          // Refresh user chats list to update last message
+          fetchUserChats();
         }
       )
       .subscribe();
@@ -144,21 +137,15 @@ const Chat = () => {
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !user) return;
+    if (!newMessage.trim() || !user || !selectedUser) return;
 
     try {
-      const messageData: any = {
+      const messageData = {
         sender_id: user.id,
+        receiver_id: selectedUser.user_id,
         message: newMessage.trim(),
         is_admin_message: isAdmin,
       };
-
-      if (isAdmin && selectedUser) {
-        messageData.receiver_id = selectedUser.user_id;
-      } else if (!isAdmin) {
-        // User sends to admin (receiver_id can be null for broadcast to admins)
-        messageData.receiver_id = null;
-      }
 
       const { error } = await supabase
         .from('chat_messages')
@@ -167,20 +154,19 @@ const Chat = () => {
       if (error) throw error;
 
       setNewMessage('');
-      if (isAdmin) fetchUserChats();
+      fetchUserChats();
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Failed to send message');
     }
   };
 
-  // Set up default chat partner for regular users (admin)
+  // Auto-select first user if none selected
   useEffect(() => {
-    if (!isAdmin && userChats.length > 0 && !selectedUser) {
-      // For regular users, auto-select admin or first available user
+    if (userChats.length > 0 && !selectedUser) {
       setSelectedUser(userChats[0]);
     }
-  }, [isAdmin, userChats, selectedUser]);
+  }, [userChats, selectedUser]);
 
   return (
     <div className="flex h-[calc(100vh-8rem)] gap-4">
