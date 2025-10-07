@@ -35,14 +35,11 @@ const Chat = () => {
   const isAdmin = userRole === 'admin';
 
   useEffect(() => {
-    if (isAdmin) {
+    // Both admin and regular users fetch all user chats
+    if (user) {
       fetchUserChats();
-    } else {
-      // For regular users, automatically set up chat with admin
-      fetchMessages(null);
-      subscribeToMessages(null);
     }
-  }, [isAdmin, user]);
+  }, [user]);
 
   useEffect(() => {
     if (selectedUser) {
@@ -94,19 +91,15 @@ const Chat = () => {
   };
 
   const fetchMessages = async (otherUserId: string | null) => {
+    if (!otherUserId || !user) return;
+    
     try {
-      let query = supabase
+      // Fetch all messages between current user and selected user
+      const { data, error } = await supabase
         .from('chat_messages')
         .select('*')
+        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${user.id})`)
         .order('created_at', { ascending: true });
-
-      if (isAdmin && otherUserId) {
-        query = query.or(`sender_id.eq.${otherUserId},receiver_id.eq.${otherUserId}`);
-      } else if (!isAdmin) {
-        query = query.or(`sender_id.eq.${user?.id},receiver_id.eq.${user?.id}`);
-      }
-
-      const { data, error } = await query;
 
       if (error) throw error;
       setMessages(data || []);
@@ -128,14 +121,14 @@ const Chat = () => {
         },
         (payload) => {
           const newMsg = payload.new as Message;
-          if (isAdmin) {
-            if (otherUserId && (newMsg.sender_id === otherUserId || newMsg.receiver_id === otherUserId)) {
-              setMessages(prev => [...prev, newMsg]);
-            }
-          } else {
+          // Update messages if the new message involves current user and selected user
+          if (otherUserId && user && 
+              ((newMsg.sender_id === user.id && newMsg.receiver_id === otherUserId) ||
+               (newMsg.sender_id === otherUserId && newMsg.receiver_id === user.id))) {
             setMessages(prev => [...prev, newMsg]);
           }
-          if (isAdmin) fetchUserChats();
+          // Refresh user chats list to update last message
+          fetchUserChats();
         }
       )
       .subscribe();
@@ -144,21 +137,15 @@ const Chat = () => {
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !user) return;
+    if (!newMessage.trim() || !user || !selectedUser) return;
 
     try {
-      const messageData: any = {
+      const messageData = {
         sender_id: user.id,
+        receiver_id: selectedUser.user_id,
         message: newMessage.trim(),
         is_admin_message: isAdmin,
       };
-
-      if (isAdmin && selectedUser) {
-        messageData.receiver_id = selectedUser.user_id;
-      } else if (!isAdmin) {
-        // User sends to admin (receiver_id can be null for broadcast to admins)
-        messageData.receiver_id = null;
-      }
 
       const { error } = await supabase
         .from('chat_messages')
@@ -167,142 +154,157 @@ const Chat = () => {
       if (error) throw error;
 
       setNewMessage('');
-      if (isAdmin) fetchUserChats();
+      fetchUserChats();
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Failed to send message');
     }
   };
 
-  if (isAdmin && !selectedUser) {
-    return (
-      <div className="flex h-[calc(100vh-8rem)]">
-        <Card className="flex-1 p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <MessageSquare className="h-5 w-5" />
-            <h2 className="text-xl font-semibold">User Conversations</h2>
-          </div>
-          <ScrollArea className="h-[calc(100vh-12rem)]">
-            <div className="space-y-2">
-              {userChats.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">No conversations yet</p>
-              ) : (
-                userChats.map((chat) => (
-                  <div
-                    key={chat.user_id}
-                    onClick={() => setSelectedUser(chat)}
-                    className="flex items-start gap-3 p-3 rounded-lg hover:bg-accent cursor-pointer transition-colors"
-                  >
-                    <Avatar>
-                      <AvatarFallback>{chat.full_name.charAt(0).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="font-medium truncate">{chat.full_name}</p>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(chat.last_message_time).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground truncate">{chat.last_message}</p>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </ScrollArea>
-        </Card>
-      </div>
-    );
-  }
+  // Auto-select first user if none selected
+  useEffect(() => {
+    if (userChats.length > 0 && !selectedUser) {
+      setSelectedUser(userChats[0]);
+    }
+  }, [userChats, selectedUser]);
 
   return (
     <div className="flex h-[calc(100vh-8rem)] gap-4">
-      {isAdmin && (
-        <Card className="w-80 p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold">Conversations</h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSelectedUser(null)}
-            >
-              Back
-            </Button>
-          </div>
-          <ScrollArea className="h-[calc(100vh-12rem)]">
-            <div className="space-y-2">
-              {userChats.map((chat) => (
+      {/* Left Sidebar - User List (WhatsApp style) */}
+      <Card className="w-80 p-4 flex flex-col">
+        <div className="flex items-center gap-2 mb-4 pb-4 border-b">
+          <MessageSquare className="h-5 w-5" />
+          <h3 className="font-semibold">
+            {isAdmin ? 'User Conversations' : 'Chats'}
+          </h3>
+        </div>
+        <ScrollArea className="flex-1">
+          <div className="space-y-2">
+            {userChats.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8 text-sm">
+                No conversations yet
+              </p>
+            ) : (
+              userChats.map((chat) => (
                 <div
                   key={chat.user_id}
                   onClick={() => setSelectedUser(chat)}
                   className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
-                    selectedUser?.user_id === chat.user_id ? 'bg-accent' : 'hover:bg-accent'
+                    selectedUser?.user_id === chat.user_id 
+                      ? 'bg-accent' 
+                      : 'hover:bg-accent/50'
                   }`}
                 >
-                  <Avatar>
-                    <AvatarFallback>{chat.full_name.charAt(0).toUpperCase()}</AvatarFallback>
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback>
+                      {chat.full_name.charAt(0).toUpperCase()}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate text-sm">{chat.full_name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{chat.last_message}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </Card>
-      )}
-
-      <Card className="flex-1 flex flex-col">
-        <div className="p-4 border-b">
-          <div className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
-            <h2 className="text-xl font-semibold">
-              {isAdmin && selectedUser ? `Chat with ${selectedUser.full_name}` : 'Chat with Admin'}
-            </h2>
-          </div>
-        </div>
-
-        <ScrollArea className="flex-1 p-4">
-          <div className="space-y-4">
-            {messages.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">No messages yet. Start the conversation!</p>
-            ) : (
-              messages.map((msg) => {
-                const isMine = msg.sender_id === user?.id;
-                return (
-                  <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[70%] rounded-lg p-3 ${
-                      isMine 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-muted'
-                    }`}>
-                      <p className="text-sm">{msg.message}</p>
-                      <span className="text-xs opacity-70 mt-1 block">
-                        {new Date(msg.created_at).toLocaleTimeString()}
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="font-medium truncate text-sm">
+                        {chat.full_name}
+                      </p>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(chat.last_message_time).toLocaleTimeString([], { 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}
                       </span>
                     </div>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {chat.last_message}
+                    </p>
                   </div>
-                );
-              })
+                </div>
+              ))
             )}
           </div>
         </ScrollArea>
+      </Card>
 
-        <div className="p-4 border-t">
-          <div className="flex gap-2">
-            <Input
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-              placeholder="Type your message..."
-              className="flex-1"
-            />
-            <Button onClick={sendMessage} size="icon">
-              <Send className="h-4 w-4" />
-            </Button>
+      {/* Right Side - Chat Messages (WhatsApp style) */}
+      <Card className="flex-1 flex flex-col">
+        {selectedUser ? (
+          <>
+            <div className="p-4 border-b bg-muted/30">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback>
+                    {selectedUser.full_name.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h2 className="font-semibold">{selectedUser.full_name}</h2>
+                  <p className="text-xs text-muted-foreground">{selectedUser.email}</p>
+                </div>
+              </div>
+            </div>
+
+            <ScrollArea className="flex-1 p-4">
+              <div className="space-y-4">
+                {messages.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    No messages yet. Start the conversation!
+                  </p>
+                ) : (
+                  messages.map((msg) => {
+                    const isMine = msg.sender_id === user?.id;
+                    return (
+                      <div 
+                        key={msg.id} 
+                        className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div 
+                          className={`max-w-[70%] rounded-lg p-3 ${
+                            isMine 
+                              ? 'bg-primary text-primary-foreground' 
+                              : 'bg-muted'
+                          }`}
+                        >
+                          <p className="text-sm break-words">{msg.message}</p>
+                          <span className="text-xs opacity-70 mt-1 block">
+                            {new Date(msg.created_at).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </ScrollArea>
+
+            <div className="p-4 border-t">
+              <div className="flex gap-2">
+                <Input
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                  placeholder="Type a message..."
+                  className="flex-1"
+                />
+                <Button 
+                  onClick={sendMessage} 
+                  size="icon"
+                  disabled={!newMessage.trim()}
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center text-muted-foreground">
+              <MessageSquare className="h-16 w-16 mx-auto mb-4 opacity-20" />
+              <p className="text-lg font-medium">Select a conversation</p>
+              <p className="text-sm">Choose a chat from the list to start messaging</p>
+            </div>
           </div>
-        </div>
+        )}
       </Card>
     </div>
   );
