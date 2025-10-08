@@ -53,29 +53,40 @@ const Chat = () => {
 
   const fetchUserChats = async () => {
     try {
+      // Fetch ALL profiles (including admin and regular users)
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name, email');
 
       if (profilesError) throw profilesError;
 
+      // Get user roles to identify admin vs regular users
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+
+      const roleMap = new Map(roles?.map(r => [r.user_id, r.role]) || []);
+
       const userChatsData = await Promise.all(
         profiles
-          .filter(profile => profile.id !== user?.id)
+          .filter(profile => profile.id !== user?.id) // Exclude current user
           .map(async (profile) => {
             const { data: lastMessage } = await supabase
               .from('chat_messages')
               .select('message, created_at')
-              .or(`sender_id.eq.${profile.id},receiver_id.eq.${profile.id}`)
+              .or(`and(sender_id.eq.${user?.id},receiver_id.eq.${profile.id}),and(sender_id.eq.${profile.id},receiver_id.eq.${user?.id})`)
               .order('created_at', { ascending: false })
               .limit(1)
-              .single();
+              .maybeSingle();
+
+            const role = roleMap.get(profile.id);
+            const displayName = profile.full_name || profile.email.split('@')[0];
 
             return {
               user_id: profile.id,
-              full_name: profile.full_name || profile.email.split('@')[0],
+              full_name: role === 'admin' ? `${displayName} (Admin)` : displayName,
               email: profile.email,
-              last_message: lastMessage?.message || 'No messages yet',
+              last_message: lastMessage?.message || 'Start a conversation',
               last_message_time: lastMessage?.created_at || new Date().toISOString(),
             };
           })
@@ -125,7 +136,11 @@ const Chat = () => {
           if (otherUserId && user && 
               ((newMsg.sender_id === user.id && newMsg.receiver_id === otherUserId) ||
                (newMsg.sender_id === otherUserId && newMsg.receiver_id === user.id))) {
-            setMessages(prev => [...prev, newMsg]);
+            setMessages(prev => {
+              // Avoid duplicates
+              if (prev.some(m => m.id === newMsg.id)) return prev;
+              return [...prev, newMsg];
+            });
           }
           // Refresh user chats list to update last message
           fetchUserChats();

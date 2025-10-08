@@ -25,39 +25,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     let mounted = true;
 
-    const initAuth = async () => {
-      try {
-        // Check for existing session first
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        
-        if (!mounted) return;
-
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-
-        if (currentSession?.user) {
-          const { data: roleData } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', currentSession.user.id)
-            .single();
-          
-          if (mounted) {
-            setUserRole(roleData?.role ?? 'user');
-          }
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    initAuth();
-
-    // Listen for auth state changes
+    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         console.log('Auth state changed:', event, currentSession?.user?.email);
@@ -72,7 +40,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             .from('user_roles')
             .select('role')
             .eq('user_id', currentSession.user.id)
-            .single();
+            .maybeSingle();
           
           if (mounted) {
             setUserRole(roleData?.role ?? 'user');
@@ -82,8 +50,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setUserRole(null);
           }
         }
+        
+        if (mounted) {
+          setLoading(false);
+        }
       }
     );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      if (!mounted) return;
+      
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+
+      if (currentSession?.user) {
+        supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', currentSession.user.id)
+          .maybeSingle()
+          .then(({ data: roleData }) => {
+            if (mounted) {
+              setUserRole(roleData?.role ?? 'user');
+              setLoading(false);
+            }
+          });
+      } else {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    });
 
     return () => {
       mounted = false;
