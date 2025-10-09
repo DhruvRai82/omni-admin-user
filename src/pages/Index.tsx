@@ -9,13 +9,13 @@ const Index = () => {
 
   useEffect(() => {
     if (!loading) {
-      if (user && userRole) {
-        navigate(userRole === 'admin' ? '/admin' : '/dashboard', { replace: true });
+      if (user) {
+        navigate('/dashboard', { replace: true });
       } else {
         navigate('/auth', { replace: true });
       }
     }
-  }, [user, userRole, loading, navigate]);
+  }, [user, loading, navigate]);
 
   // Show nothing while redirecting
   return null;

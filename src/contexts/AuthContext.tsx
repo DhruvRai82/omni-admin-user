@@ -25,62 +25,52 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     let mounted = true;
 
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        console.log('Auth state changed:', event, currentSession?.user?.email);
-        
-        if (!mounted) return;
-
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-
-        if (currentSession?.user) {
-          const { data: roleData } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', currentSession.user.id)
-            .maybeSingle();
-          
-          if (mounted) {
-            setUserRole(roleData?.role ?? 'user');
-          }
-        } else {
-          if (mounted) {
-            setUserRole(null);
-          }
-        }
-        
+    const fetchUserRole = async (userId: string) => {
+      try {
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .maybeSingle();
         if (mounted) {
-          setLoading(false);
+          setUserRole(roleData?.role ?? 'user');
         }
+      } catch (e) {
+        if (mounted) setUserRole('user');
       }
-    );
+    };
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+    // Set up auth state listener FIRST (sync-only to avoid deadlocks)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
+      console.log('Auth state changed:', event, currentSession?.user?.email);
       if (!mounted) return;
-      
+
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
 
       if (currentSession?.user) {
-        supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', currentSession.user.id)
-          .maybeSingle()
-          .then(({ data: roleData }) => {
-            if (mounted) {
-              setUserRole(roleData?.role ?? 'user');
-              setLoading(false);
-            }
-          });
+        // Defer Supabase calls outside the callback
+        setTimeout(() => fetchUserRole(currentSession.user!.id), 0);
       } else {
-        if (mounted) {
-          setLoading(false);
-        }
+        setUserRole(null);
       }
+    });
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      if (!mounted) return;
+
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+
+      if (currentSession?.user) {
+        fetchUserRole(currentSession.user.id);
+      } else {
+        setUserRole(null);
+      }
+
+      // Mark initialization complete
+      setLoading(false);
     });
 
     return () => {
