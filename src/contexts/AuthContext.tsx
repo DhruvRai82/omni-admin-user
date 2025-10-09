@@ -24,6 +24,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     let mounted = true;
+    let roleLoaded = false;
 
     const fetchUserRole = async (userId: string) => {
       try {
@@ -34,9 +35,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           .maybeSingle();
         if (mounted) {
           setUserRole(roleData?.role ?? 'user');
+          if (!roleLoaded) {
+            roleLoaded = true;
+            setLoading(false);
+          }
         }
       } catch (e) {
-        if (mounted) setUserRole('user');
+        if (mounted) {
+          setUserRole('user');
+          if (!roleLoaded) {
+            roleLoaded = true;
+            setLoading(false);
+          }
+        }
       }
     };
 
@@ -53,6 +64,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setTimeout(() => fetchUserRole(currentSession.user!.id), 0);
       } else {
         setUserRole(null);
+        if (!roleLoaded) {
+          roleLoaded = true;
+          setLoading(false);
+        }
       }
     });
 
@@ -67,10 +82,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         fetchUserRole(currentSession.user.id);
       } else {
         setUserRole(null);
+        setLoading(false);
       }
-
-      // Mark initialization complete
-      setLoading(false);
     });
 
     return () => {
