@@ -163,6 +163,170 @@ export type Database = {
         }
         Relationships: []
       }
+      test_cases: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          expected_result: string
+          id: string
+          name: string
+          preconditions: string | null
+          priority: Database["public"]["Enums"]["test_priority"]
+          status: Database["public"]["Enums"]["test_status"]
+          test_suite_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          expected_result: string
+          id?: string
+          name: string
+          preconditions?: string | null
+          priority?: Database["public"]["Enums"]["test_priority"]
+          status?: Database["public"]["Enums"]["test_status"]
+          test_suite_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          expected_result?: string
+          id?: string
+          name?: string
+          preconditions?: string | null
+          priority?: Database["public"]["Enums"]["test_priority"]
+          status?: Database["public"]["Enums"]["test_status"]
+          test_suite_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_cases_test_suite_id_fkey"
+            columns: ["test_suite_id"]
+            isOneToOne: false
+            referencedRelation: "test_suites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_plans: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_plans_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_steps: {
+        Row: {
+          action: string
+          created_at: string
+          expected_result: string
+          id: string
+          step_number: number
+          test_case_id: string
+          updated_at: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          expected_result: string
+          id?: string
+          step_number: number
+          test_case_id: string
+          updated_at?: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          expected_result?: string
+          id?: string
+          step_number?: number
+          test_case_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_steps_test_case_id_fkey"
+            columns: ["test_case_id"]
+            isOneToOne: false
+            referencedRelation: "test_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_suites: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          test_plan_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          test_plan_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          test_plan_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_suites_test_plan_id_fkey"
+            columns: ["test_plan_id"]
+            isOneToOne: false
+            referencedRelation: "test_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -199,6 +363,8 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      test_priority: "low" | "medium" | "high" | "critical"
+      test_status: "draft" | "ready" | "deprecated"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -327,6 +493,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      test_priority: ["low", "medium", "high", "critical"],
+      test_status: ["draft", "ready", "deprecated"],
     },
   },
 } as const

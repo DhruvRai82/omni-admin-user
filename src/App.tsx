@@ -20,6 +20,10 @@ import AdminApps from "./pages/admin/Apps";
 import UserDashboard from "./pages/user/UserDashboard";
 import Projects from "./pages/user/Projects";
 import ProjectDetail from "./pages/user/ProjectDetail";
+import TestPlans from "./pages/user/TestPlans";
+import TestSuites from "./pages/user/TestSuites";
+import TestCases from "./pages/user/TestCases";
+import TestCaseDetail from "./pages/user/TestCaseDetail";
 import UserApps from "./pages/user/UserApps";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
@@ -68,6 +72,10 @@ const App = () => (
               <Route index element={<UserDashboard />} />
               <Route path="projects" element={<Projects />} />
               <Route path="projects/:id" element={<ProjectDetail />} />
+              <Route path="projects/:id/test-plans" element={<TestPlans />} />
+              <Route path="projects/:id/test-plans/:planId" element={<TestSuites />} />
+              <Route path="projects/:id/test-plans/:planId/suites/:suiteId" element={<TestCases />} />
+              <Route path="projects/:id/test-plans/:planId/suites/:suiteId/cases/:caseId" element={<TestCaseDetail />} />
               <Route path="chat" element={<Chat />} />
               <Route path="apps" element={<UserApps />} />
               <Route path="profile" element={<Profile />} />
