@@ -44,6 +44,79 @@ export type Database = {
         }
         Relationships: []
       }
+      bugs: {
+        Row: {
+          assigned_to: string | null
+          attachments: Json | null
+          created_at: string
+          description: string | null
+          id: string
+          project_id: string
+          reported_by: string
+          resolved_at: string | null
+          severity: Database["public"]["Enums"]["bug_severity"]
+          status: Database["public"]["Enums"]["bug_status"]
+          test_case_id: string | null
+          test_execution_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          attachments?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          project_id: string
+          reported_by: string
+          resolved_at?: string | null
+          severity?: Database["public"]["Enums"]["bug_severity"]
+          status?: Database["public"]["Enums"]["bug_status"]
+          test_case_id?: string | null
+          test_execution_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          attachments?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          project_id?: string
+          reported_by?: string
+          resolved_at?: string | null
+          severity?: Database["public"]["Enums"]["bug_severity"]
+          status?: Database["public"]["Enums"]["bug_status"]
+          test_case_id?: string | null
+          test_execution_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bugs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bugs_test_case_id_fkey"
+            columns: ["test_case_id"]
+            isOneToOne: false
+            referencedRelation: "test_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bugs_test_execution_id_fkey"
+            columns: ["test_execution_id"]
+            isOneToOne: false
+            referencedRelation: "test_executions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages: {
         Row: {
           created_at: string | null
@@ -213,6 +286,66 @@ export type Database = {
           },
         ]
       }
+      test_executions: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          duration_seconds: number | null
+          executed_by: string | null
+          execution_date: string | null
+          id: string
+          notes: string | null
+          screenshots: Json | null
+          status: Database["public"]["Enums"]["execution_status"]
+          test_case_id: string
+          test_run_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          executed_by?: string | null
+          execution_date?: string | null
+          id?: string
+          notes?: string | null
+          screenshots?: Json | null
+          status?: Database["public"]["Enums"]["execution_status"]
+          test_case_id: string
+          test_run_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          executed_by?: string | null
+          execution_date?: string | null
+          id?: string
+          notes?: string | null
+          screenshots?: Json | null
+          status?: Database["public"]["Enums"]["execution_status"]
+          test_case_id?: string
+          test_run_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_executions_test_case_id_fkey"
+            columns: ["test_case_id"]
+            isOneToOne: false
+            referencedRelation: "test_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_executions_test_run_id_fkey"
+            columns: ["test_run_id"]
+            isOneToOne: false
+            referencedRelation: "test_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       test_plans: {
         Row: {
           created_at: string
@@ -244,6 +377,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "test_plans_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_runs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          project_id: string
+          scheduled_date: string | null
+          started_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          project_id: string
+          scheduled_date?: string | null
+          started_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          project_id?: string
+          scheduled_date?: string | null
+          started_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_runs_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
@@ -363,6 +543,14 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      bug_severity: "low" | "medium" | "high" | "critical"
+      bug_status: "open" | "in_progress" | "resolved" | "closed" | "reopened"
+      execution_status:
+        | "passed"
+        | "failed"
+        | "blocked"
+        | "skipped"
+        | "in_progress"
       test_priority: "low" | "medium" | "high" | "critical"
       test_status: "draft" | "ready" | "deprecated"
     }
@@ -493,6 +681,15 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      bug_severity: ["low", "medium", "high", "critical"],
+      bug_status: ["open", "in_progress", "resolved", "closed", "reopened"],
+      execution_status: [
+        "passed",
+        "failed",
+        "blocked",
+        "skipped",
+        "in_progress",
+      ],
       test_priority: ["low", "medium", "high", "critical"],
       test_status: ["draft", "ready", "deprecated"],
     },

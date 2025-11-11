@@ -24,6 +24,11 @@ import TestPlans from "./pages/user/TestPlans";
 import TestSuites from "./pages/user/TestSuites";
 import TestCases from "./pages/user/TestCases";
 import TestCaseDetail from "./pages/user/TestCaseDetail";
+import TestRuns from "./pages/user/TestRuns";
+import TestRunDetail from "./pages/user/TestRunDetail";
+import TestAnalytics from "./pages/user/TestAnalytics";
+import Bugs from "./pages/user/Bugs";
+import ImportExport from "./pages/user/ImportExport";
 import UserApps from "./pages/user/UserApps";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
@@ -76,6 +81,11 @@ const App = () => (
               <Route path="projects/:id/test-plans/:planId" element={<TestSuites />} />
               <Route path="projects/:id/test-plans/:planId/suites/:suiteId" element={<TestCases />} />
               <Route path="projects/:id/test-plans/:planId/suites/:suiteId/cases/:caseId" element={<TestCaseDetail />} />
+              <Route path="test-runs" element={<TestRuns />} />
+              <Route path="test-runs/:id" element={<TestRunDetail />} />
+              <Route path="test-analytics" element={<TestAnalytics />} />
+              <Route path="bugs" element={<Bugs />} />
+              <Route path="import-export" element={<ImportExport />} />
               <Route path="chat" element={<Chat />} />
               <Route path="apps" element={<UserApps />} />
               <Route path="profile" element={<Profile />} />

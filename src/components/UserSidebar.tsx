@@ -8,6 +8,10 @@ import {
   LogOut,
   UserCircle,
   ClipboardList,
+  PlayCircle,
+  BarChart3,
+  Bug,
+  FileDown,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -28,7 +32,10 @@ import { Button } from '@/components/ui/button';
 const userNavItems = [
   { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
   { title: 'Projects', url: '/dashboard/projects', icon: FolderKanban },
-  { title: 'Test Plans', url: '/dashboard/projects', icon: ClipboardList },
+  { title: 'Test Runs', url: '/dashboard/test-runs', icon: PlayCircle },
+  { title: 'Test Analytics', url: '/dashboard/test-analytics', icon: BarChart3 },
+  { title: 'Bugs', url: '/dashboard/bugs', icon: Bug },
+  { title: 'Import/Export', url: '/dashboard/import-export', icon: FileDown },
   { title: 'Chat', url: '/dashboard/chat', icon: MessageSquare },
   { title: 'Apps', url: '/dashboard/apps', icon: Grid3x3 },
 ];
